@@ -59,6 +59,12 @@
         <item name="android:textColor">@color/status_bar_clock_color</item>
     </style>
 
+    <style name="TextAppearance.StatusBar.SimSlotLabel" parent="@android:style/TextAppearance.StatusBar.Icon">
+        <item name="android:textSize">10.0dip</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">#ff808080</item>
+    </style>
+
     <style name="TextAppearance.StatusBar.Battery" parent="@*android:style/TextAppearance.StatusBar.Icon">
         <!-- Note: must be dp to fit in status bar -->
         <item name="android:textSize">12dp</item>
@@ -137,9 +143,8 @@
     <style name="BaseBrightnessDialogContainer">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginLeft">8dp</item>
-        <item name="android:layout_marginRight">8dp</item>
-        <item name="android:padding">16dp</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
     </style>
     <style name="BrightnessDialogContainer" parent="@style/BaseBrightnessDialogContainer" />
 

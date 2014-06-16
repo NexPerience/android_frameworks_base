@@ -677,6 +677,8 @@ public class PieMenu extends FrameLayout {
                 for (int i = 0; i < mNumberOfSnapPoints; i++) {
                     SnapPoint snap = mSnapPoint[i];
 
+                    if (snap == null) continue;
+
                     float snapDistanceX = snap.x - mX;
                     float snapDistanceY = snap.y - mY;
                     float fraction = 1f
@@ -846,6 +848,8 @@ public class PieMenu extends FrameLayout {
         } else if (MotionEvent.ACTION_MOVE == action) {
             for (int i = 0; i < mNumberOfSnapPoints; i++) {
                 SnapPoint snap = mSnapPoint[i];
+
+                if (snap == null) continue;
 
                 float snapDistanceX = snap.x - mX;
                 float snapDistanceY = snap.y - mY;

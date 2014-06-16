@@ -53,6 +53,7 @@ import android.app.IActivityManager;
 import android.app.StatusBarManager;
 import android.app.admin.DevicePolicyManager;
 import android.animation.ValueAnimator;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -89,6 +90,7 @@ import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Trace;
+import android.os.UserHandle;
 import android.os.WorkSource;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
@@ -296,6 +298,8 @@ public class WindowManagerService extends IWindowManager.Stub
     final private KeyguardDisableHandler mKeyguardDisableHandler;
 
     private final boolean mHeadless;
+
+    private final int mSfHwRotation;
 
     private BroadcastReceiver mThemeChangeReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -564,6 +568,8 @@ public class WindowManagerService extends IWindowManager.Stub
     final DisplayManagerService mDisplayManagerService;
     final DisplayManager mDisplayManager;
 
+    private boolean mForceDisableHardwareKeyboard = false;
+
     // Who is holding the screen on.
     Session mHoldingScreenOn;
     PowerManager.WakeLock mHoldingScreenWakeLock;
@@ -809,6 +815,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
         mAnimator = new WindowAnimator(this);
 
+        mForceDisableHardwareKeyboard = context.getResources().getBoolean(
+                com.android.internal.R.bool.config_forceDisableHardwareKeyboard);
+
         initPolicy(UiThread.getHandler());
 
         // Add ourself to the Watchdog monitors.
@@ -824,6 +833,9 @@ public class WindowManagerService extends IWindowManager.Stub
         }
 
         ThemeUtils.registerThemeChangeReceiver(mContext, mThemeChangeReceiver);
+
+        // Load hardware rotation from prop
+        mSfHwRotation = android.os.SystemProperties.getInt("ro.sf.hwrotation",0) / 90;
     }
 
     private Context getUiContext() {
@@ -4447,6 +4459,10 @@ public class WindowManagerService extends IWindowManager.Stub
             // If we are preparing an app transition, then delay changing
             // the visibility of this token until we execute that transition.
             if (okToDisplay() && mAppTransition.isTransitionSet()) {
+                // Already in requested state, don't do anything more.
+                if (wtoken.hiddenRequested != visible) {
+                    return;
+                }
                 wtoken.hiddenRequested = !visible;
 
                 if (!wtoken.startingDisplayed) {
@@ -5536,10 +5552,23 @@ public class WindowManagerService extends IWindowManager.Stub
             mInputMonitor.setEventDispatchingLw(mEventDispatchingEnabled);
         }
 
+        // start QuickBoot to check if need restore from exception
+        if (SystemProperties.getBoolean("persist.sys.quickboot_ongoing", false))
+            checkQuickBootException();
+
         mPolicy.enableScreenAfterBoot();
 
         // Make sure the last requested orientation has been applied.
         updateRotationUnchecked(false, false);
+    }
+
+    private void checkQuickBootException() {
+        Intent intent = new Intent("org.codeaurora.action.QUICKBOOT");
+        intent.putExtra("mode", 2);
+        try {
+            mContext.startActivityAsUser(intent,UserHandle.CURRENT);
+        } catch (ActivityNotFoundException e) {
+        }
     }
 
     public void showBootMessage(final CharSequence msg, final boolean always) {
@@ -5751,8 +5780,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
                     // We keep on including windows until we go past a full-screen
                     // window.
-                    boolean fullscreen = ws.isFullscreen(dw, dh);
-                    including = !ws.mIsImWindow && !fullscreen;
+                    including = !ws.mIsImWindow && !ws.isFullscreen(dw, dh);
 
                     final WindowStateAnimator winAnim = ws.mWinAnimator;
                     if (maxLayer < winAnim.mSurfaceLayer) {
@@ -5805,6 +5833,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
                 // The screenshot API does not apply the current screen rotation.
                 rot = getDefaultDisplayContentLocked().getDisplay().getRotation();
+                // Allow for abnormal hardware orientation
+                rot = (rot + mSfHwRotation) % 4;
+
                 int fw = frame.width();
                 int fh = frame.height();
 
@@ -6886,7 +6917,10 @@ public class WindowManagerService extends IWindowManager.Stub
             }
 
             // Determine whether a hard keyboard is available and enabled.
-            boolean hardKeyboardAvailable = config.keyboard != Configuration.KEYBOARD_NOKEYS;
+            boolean hardKeyboardAvailable = false;
+            if (!mForceDisableHardwareKeyboard) {
+                hardKeyboardAvailable = config.keyboard != Configuration.KEYBOARD_NOKEYS;
+            }
             if (hardKeyboardAvailable != mHardKeyboardAvailable) {
                 mHardKeyboardAvailable = hardKeyboardAvailable;
                 mHardKeyboardEnabled = hardKeyboardAvailable;
@@ -10343,6 +10377,16 @@ public class WindowManagerService extends IWindowManager.Stub
     @Override
     public boolean hasNavigationBar() {
         return mPolicy.hasNavigationBar();
+    }
+
+    @Override
+    public boolean needsNavigationBar() {
+        return mPolicy.needsNavigationBar();
+    }
+
+    @Override
+    public boolean hasMenuKeyEnabled() {
+        return mPolicy.hasMenuKeyEnabled();
     }
 
     @Override

@@ -63,6 +63,7 @@ LOCAL_SRC_FILES:= \
 	android_text_AndroidCharacter.cpp \
 	android_text_AndroidBidi.cpp \
 	android_os_Debug.cpp \
+	android_os_FileUtils.cpp \
 	android_os_MemoryFile.cpp \
 	android_os_MessageQueue.cpp \
 	android_os_Parcel.cpp \
@@ -161,6 +162,7 @@ LOCAL_C_INCLUDES += \
 	$(call include-path-for, libhardware_legacy)/hardware_legacy \
 	$(TOP)/frameworks/av/include \
 	$(TOP)/system/media/camera/include \
+	external/e2fsprogs/lib \
 	external/skia/src/core \
 	external/skia/src/pdf \
 	external/skia/src/images \
@@ -182,6 +184,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libmemtrack \
 	libandroidfw \
 	libexpat \
+	libext2_blkid \
 	libnativehelper \
 	liblog \
 	libcutils \
@@ -218,20 +221,27 @@ ifeq ($(TARGET_ARCH), arm)
   ifeq ($(TARGET_USE_KRAIT_BIONIC_OPTIMIZATION), true)
     TARGET_arm_CFLAGS += -DUSE_NEON_BITMAP_OPTS -mvectorize-with-neon-quad
     LOCAL_SRC_FILES+= \
-		android/graphics/Bitmap.cpp.arm
+                android/graphics/Bitmap.cpp.arm
   else
     ifeq ($(TARGET_ARCH_VARIANT_CPU), cortex-a15)
       TARGET_arm_CFLAGS += -DUSE_NEON_BITMAP_OPTS -mvectorize-with-neon-quad
       LOCAL_SRC_FILES+= \
-		android/graphics/Bitmap.cpp.arm
+                android/graphics/Bitmap.cpp.arm
     else
       LOCAL_SRC_FILES+= \
-		android/graphics/Bitmap.cpp
+                android/graphics/Bitmap.cpp
     endif
   endif
 else
     LOCAL_SRC_FILES+= \
-		android/graphics/Bitmap.cpp
+                android/graphics/Bitmap.cpp
+endif
+
+ifeq ($(BOARD_USES_QC_TIME_SERVICES),true)
+LOCAL_CFLAGS += -DHAVE_QC_TIME_SERVICES=1
+LOCAL_SHARED_LIBRARIES += libtime_genoff
+$(shell mkdir -p $(OUT)/obj/SHARED_LIBRARIES/libtime_genoff_intermediates/)
+$(shell touch $(OUT)/obj/SHARED_LIBRARIES/libtime_genoff_intermediates/export_includes)
 endif
 
 ifeq ($(USE_OPENGL_RENDERER),true)

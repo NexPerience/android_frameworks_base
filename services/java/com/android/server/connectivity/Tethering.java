@@ -44,6 +44,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
 import android.os.ServiceManager;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
@@ -668,6 +669,10 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
     public void checkDunRequired() {
         int secureSetting = Settings.Global.getInt(mContext.getContentResolver(),
                 Settings.Global.TETHER_DUN_REQUIRED, 2);
+        // Allow override of TETHER_DUN_REQUIRED via prop
+        int prop = SystemProperties.getInt("persist.sys.dun.override", -1);
+        secureSetting = ((prop < 3) && (prop >= 0)) ? prop : secureSetting;
+
         synchronized (mPublicSync) {
             // 2 = not set, 0 = DUN not required, 1 = DUN required
             if (secureSetting != 2) {
@@ -695,10 +700,14 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
                         mUpstreamIfaceTypes.add(HIPRI_TYPE);
                     }
                 }
-            }
-            if (mUpstreamIfaceTypes.contains(DUN_TYPE)) {
-                mPreferredUpstreamMobileApn = ConnectivityManager.TYPE_MOBILE_DUN;
+                /* if DUN is still available, make that a priority */
+                if (mUpstreamIfaceTypes.contains(DUN_TYPE)) {
+                    mPreferredUpstreamMobileApn = ConnectivityManager.TYPE_MOBILE_DUN;
+                } else {
+                    mPreferredUpstreamMobileApn = ConnectivityManager.TYPE_MOBILE_HIPRI;
+                }
             } else {
+                /* dun_required is not set, fall back to HIPRI in that case */
                 mPreferredUpstreamMobileApn = ConnectivityManager.TYPE_MOBILE_HIPRI;
             }
         }
@@ -763,8 +772,8 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
     //      CONNECTIVITY_ACTION. Only to accomodate interface
     //      switch during HO.
     //      @see bug/4455071
-    public void handleTetherIfaceChange() {
-        mTetherMasterSM.sendMessage(TetherMasterSM.CMD_UPSTREAM_CHANGED);
+    public void handleTetherIfaceChange(NetworkInfo info) {
+        mTetherMasterSM.sendMessage(TetherMasterSM.CMD_UPSTREAM_CHANGED, info);
     }
 
     class TetherInterfaceSM extends StateMachine {
@@ -1316,8 +1325,8 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
                 Log.d(TAG, "adding v6 interface " + iface);
                 try {
                     service.addUpstreamV6Interface(iface);
-                } catch (Exception e) {
-                    Log.e(TAG, "Unable to append v6 upstream interface", e);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Unable to append v6 upstream interface");
                 }
             }
 
@@ -1328,8 +1337,8 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
                 Log.d(TAG, "removing v6 interface " + iface);
                 try {
                     service.removeUpstreamV6Interface(iface);
-                } catch (Exception e) {
-                    Log.e(TAG, "Unable to remove v6 upstream interface", e);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Unable to remove v6 upstream interface");
                 }
             }
 

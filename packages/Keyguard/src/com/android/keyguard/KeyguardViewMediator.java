@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ * Not a Contribution.
  * Copyright (C) 2007 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,6 +47,7 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
+import android.telephony.MSimTelephonyManager;
 import android.telephony.TelephonyManager;
 import android.util.EventLog;
 import android.util.Log;
@@ -382,8 +385,12 @@ public class KeyguardViewMediator {
 
         @Override
         public void onSimStateChanged(IccCardConstants.State simState) {
-            if (DEBUG) Log.d(TAG, "onSimStateChanged: " + simState);
+            onSimStateChanged(simState, MSimTelephonyManager.getDefault().getDefaultSubscription());
+        }
 
+        @Override
+        public void onSimStateChanged(IccCardConstants.State simState, int subscription) {
+            if (DEBUG) Log.d(TAG, "onSimStateChanged: " + simState);
             switch (simState) {
                 case NOT_READY:
                 case ABSENT:
@@ -429,7 +436,7 @@ public class KeyguardViewMediator {
                     break;
                 case READY:
                     synchronized (this) {
-                        if (isShowing()) {
+                        if (isShowing() && !isSecure()) {
                             resetStateLocked(null);
                         }
                     }
@@ -657,7 +664,6 @@ public class KeyguardViewMediator {
 
         if (timeout <= 0) {
             // Lock now
-            mSuppressNextLockSound = true;
             doKeyguardLocked(null);
         } else {
             // Lock in the future
@@ -885,8 +891,31 @@ public class KeyguardViewMediator {
      * Enable the keyguard if the settings are appropriate.
      */
     private void doKeyguardLocked(Bundle options) {
+        // if the keyguard is already showing, don't bother
+        if (mKeyguardViewManager.isShowing()) {
+            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because it is already showing");
+            return;
+        }
+
+        // if the setup wizard hasn't run yet, don't show
+        final boolean provisioned = mUpdateMonitor.isDeviceProvisioned();
+        int numPhones = MSimTelephonyManager.getDefault().getPhoneCount();
+        final IccCardConstants.State []state = new IccCardConstants.State[numPhones];
+        boolean lockedOrMissing = false;
+        for (int i = 0; i < numPhones; i++) {
+            state[i] = mUpdateMonitor.getSimState(i);
+            lockedOrMissing = lockedOrMissing || isLockedOrMissing(state[i]);
+            if (lockedOrMissing) break;
+        }
+
+        if (!lockedOrMissing && !provisioned) {
+            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because device isn't provisioned"
+                    + " and the sim is not locked or missing");
+            return;
+        }
+
         // if another app is disabling us, don't show
-        if (!mExternallyEnabled) {
+        if (!mExternallyEnabled && !lockedOrMissing) {
             if (DEBUG) Log.d(TAG, "doKeyguard: not showing because externally disabled");
 
             // note: we *should* set mNeedToReshowWhenReenabled=true here, but that makes
@@ -901,28 +930,6 @@ public class KeyguardViewMediator {
             return;
         }
 
-        // if the keyguard is already showing, don't bother
-        if (mKeyguardViewManager.isShowing()) {
-            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because it is already showing");
-            return;
-        }
-
-        // if the setup wizard hasn't run yet, don't show
-        final boolean requireSim = !SystemProperties.getBoolean("keyguard.no_require_sim",
-                false);
-        final boolean provisioned = mUpdateMonitor.isDeviceProvisioned();
-        final IccCardConstants.State state = mUpdateMonitor.getSimState();
-        final boolean lockedOrMissing = state.isPinLocked()
-                || ((state == IccCardConstants.State.ABSENT
-                || state == IccCardConstants.State.PERM_DISABLED)
-                && requireSim);
-
-        if (!lockedOrMissing && !provisioned) {
-            if (DEBUG) Log.d(TAG, "doKeyguard: not showing because device isn't provisioned"
-                    + " and the sim is not locked or missing");
-            return;
-        }
-
         if (mUserManager.getUsers(true).size() < 2
                 && mLockPatternUtils.isLockScreenDisabled() && !lockedOrMissing) {
             if (DEBUG) Log.d(TAG, "doKeyguard: not showing because lockscreen is off");
@@ -931,6 +938,15 @@ public class KeyguardViewMediator {
 
         if (DEBUG) Log.d(TAG, "doKeyguard: showing the lock screen");
         showLocked(options);
+    }
+
+    boolean isLockedOrMissing(IccCardConstants.State state) {
+        final boolean requireSim = !SystemProperties.getBoolean("keyguard.no_require_sim",
+                false);
+        return (state.isPinLocked()
+                || ((state == IccCardConstants.State.ABSENT
+                        || state == IccCardConstants.State.PERM_DISABLED)
+                    && requireSim));
     }
 
     /**
@@ -1034,8 +1050,6 @@ public class KeyguardViewMediator {
                         + sequence + ", mDelayedShowingSequence = " + mDelayedShowingSequence);
                 synchronized (KeyguardViewMediator.this) {
                     if (mDelayedShowingSequence == sequence) {
-                        // Don't play lockscreen SFX if the screen went off due to timeout.
-                        mSuppressNextLockSound = true;
                         doKeyguardLocked(null);
                     }
                 }

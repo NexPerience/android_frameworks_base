@@ -887,7 +887,15 @@
         android:description="@string/permdesc_changeWifiMulticastState"
         android:label="@string/permlab_changeWifiMulticastState" />
 
-    <!-- Allows access to the vibrator -->
+    <!-- Allows an application to override the power key action
+        @hide -->
+    <permission android:name="android.permission.PREVENT_POWER_KEY"
+        android:permissionGroup="android.permission-group.HARDWARE_CONTROLS"
+        android:protectionLevel="dangerous"
+        android:label="@string/permlab_preventpower"
+        android:description="@string/permdesc_preventpower" />
+
+<!-- Allows access to the vibrator -->
     <permission android:name="android.permission.VIBRATE"
         android:permissionGroup="android.permission-group.AFFECTS_BATTERY"
         android:protectionLevel="normal"
@@ -2208,8 +2216,15 @@
         android:description="@string/permdesc_broadcastPackageRemoved"
         android:protectionLevel="signature" />
 
-    <!-- Allows an application to broadcast an SMS receipt notification.
-    <p>Not for use by third-party applications. -->
+    <!-- Allows an application to intercept and rewrite outgoing SMS
+         @hide -->
+    <permission android:name="android.permission.INTERCEPT_SMS"
+        android:permissionGroup="android.permission-group.MESSAGES"
+        android:label="@string/permlab_interceptSmsSent"
+        android:description="@string/permdesc_interceptSmsSent"
+        android:protectionLevel="signature" />
+
+    <!-- Allows an application to broadcast an SMS receipt notification -->
     <permission android:name="android.permission.BROADCAST_SMS"
         android:permissionGroup="android.permission-group.MESSAGES"
         android:label="@string/permlab_broadcastSmsReceived"
@@ -2532,6 +2547,13 @@
         android:description="@string/permdesc_accessNetworkConditions"
         android:protectionLevel="signature|system" />
 
+    <!-- Allows an application to record the screen.
+         @hide This is not a third-party API (intended for system apps). -->
+    <permission android:name="android.permission.RECORD_SCREEN"
+        android:label="@string/permlab_recordScreen"
+        android:description="@string/permdesc_recordScreen"
+        android:protectionLevel="signature|system" />
+
     <!-- =============================================================== -->
     <!-- Permissions for accessing security data                         -->
     <!-- =============================================================== -->
@@ -2560,6 +2582,15 @@
         android:label="@string/permlab_writeThemes"
         android:description="@string/permdesc_writeThemesDesc"
         android:protectionLevel="signature" />
+
+    <!-- Allows an application access the CM hardware abstraction framework (DANGEROUS)
+         <p>Not for use by third-party applications.
+         @hide -->
+    <permission android:name="android.permission.HARDWARE_ABSTRACTION_ACCESS"
+        android:label="@string/permlab_useHardwareFramework"
+        android:description="@string/permdesc_useHardwareFramework"
+        android:protectionLevel="signature" />
+
 
     <!-- The system process is explicitly the only one allowed to launch the
          confirmation UI for full backup/restore -->

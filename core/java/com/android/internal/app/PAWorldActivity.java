@@ -69,7 +69,7 @@ public class PAWorldActivity extends Activity {
         lp.gravity = Gravity.CENTER;
 
         final ImageView logo = new ImageView(this);
-        logo.setImageResource(com.android.internal.R.drawable.pa_world_logo);
+        logo.setImageResource(com.android.internal.R.drawable.xpe_logo);
         logo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         logo.setVisibility(View.INVISIBLE);
 

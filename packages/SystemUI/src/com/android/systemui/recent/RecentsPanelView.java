@@ -26,6 +26,7 @@ import android.app.ActivityOptions;
 import android.app.INotificationManager;
 import android.app.TaskStackBuilder;
 import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -96,6 +97,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     private boolean mFitThumbnailToXY;
     private int mRecentItemLayoutId;
     private boolean mHighEndGfx;
+    private ImageView mClearRecents;
 
     private RecentsActivity mRecentsActivity;
     private INotificationManager mNotificationManager;
@@ -354,6 +356,12 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
             // if there are no apps, bring up a "No recent apps" message
             mRecentsNoApps.setAlpha(1f);
             mRecentsNoApps.setVisibility(getTasks() == 0 ? View.VISIBLE : View.INVISIBLE);
+            // TODO: Reimplement when hybrid is back!
+            /* int navBarPercent = Integer.parseInt(ExtendedPropertiesUtils.getProperty("com.android.systemui.navbar.dpi",
+                    "100"));
+            mClearRecents.setVisibility(navBarPercent == 0 && getTasks() > 0 ? View.VISIBLE : View.GONE);*/
+            // mClearRecents is the top right view not the nabar one, so show it when navbar is not showing and/or pie is disabled.
+            mClearRecents.setVisibility(showAlternativeRecentsClearAll() && getTasks() > 0 ? View.VISIBLE : View.GONE);
             onAnimationEnd(null);
             setFocusable(true);
             setFocusableInTouchMode(true);
@@ -366,6 +374,11 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                 mPopup.dismiss();
             }
         }
+    }
+
+    public boolean showAlternativeRecentsClearAll() {
+        return Settings.System.getIntForUser(mContext.getContentResolver(),
+                Settings.System.ALTERNATIVE_RECENTS_CLEAR_ALL, 0, UserHandle.USER_CURRENT) == 1;
     }
 
     protected void onAttachedToWindow () {
@@ -466,6 +479,16 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
 
         mRecentsScrim = findViewById(R.id.recents_bg_protect);
         mRecentsNoApps = findViewById(R.id.recents_no_apps);
+
+        mClearRecents = (ImageView) findViewById(R.id.recents_clear);
+        if (mClearRecents != null){
+            mClearRecents.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mRecentsContainer.swipeAllViewsInLayout();
+                }
+            });
+        }
 
         if (mRecentsScrim != null) {
             mHighEndGfx = ActivityManager.isHighEndGfx();
