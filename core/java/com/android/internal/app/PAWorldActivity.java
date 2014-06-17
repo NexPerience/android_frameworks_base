@@ -83,7 +83,7 @@ public class PAWorldActivity extends Activity {
         letter.setTextSize(200);
         letter.setTextColor(TEXT_COLOR);
         letter.setGravity(Gravity.CENTER);
-        letter.setText("PA");
+        letter.setText("XPe");
 
         final int p = (int)(4 * metrics.density);
 
