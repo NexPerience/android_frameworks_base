@@ -94,9 +94,9 @@ public class PAWorldActivity extends Activity {
         tv.setTextColor(TEXT_COLOR);
         tv.setGravity(Gravity.CENTER);
         tv.setTransformationMethod(new AllCapsTransformationMethod(this));
-        String paVersion = SystemProperties.get("ro.pa.version");
+        String paVersion = SystemProperties.get("ro.xpe.version");
         paVersion = paVersion.replaceAll("([0-9\\.]+?)-.*", "$1");
-        tv.setText("Paranoid Android " + paVersion);
+        tv.setText("XPerience " + paVersion);
         tv.setVisibility(View.INVISIBLE);
 
         mContent.addView(bg);
@@ -165,7 +165,7 @@ public class PAWorldActivity extends Activity {
                     getBaseContext().startActivityAsUser(intent,
                             new UserHandle(UserHandle.USER_CURRENT));
                 } catch (ActivityNotFoundException ex) {
-                    android.util.Log.e("PAWorldActivity", "Couldn't catch a break.");
+                    android.util.Log.e("XPerienceEasterEgg", "Couldn't catch a break.");
                 }
                 finish();
                 return true;
