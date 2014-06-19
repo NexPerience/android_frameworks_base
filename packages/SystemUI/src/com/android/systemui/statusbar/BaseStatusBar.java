@@ -557,11 +557,27 @@ public abstract class BaseStatusBar extends SystemUI implements
     }
 
     protected void updateClearAllRecents(boolean navBarHidden, boolean pieEnabled) {
+
+        // check if device has hardware keys
+        boolean hasKeys = false;
+        try {
+                IWindowManager wm = WindowManagerGlobal.getWindowManagerService();
+                hasKeys = !wm.needsNavigationBar();
+            } catch (RemoteException e) {
+            }
+      if (!hasKeys) {
         // use alternative clear all view/button?
         Settings.System.putInt(mContext.getContentResolver(),
                 Settings.System.ALTERNATIVE_RECENTS_CLEAR_ALL,
                         navBarHidden && pieEnabled ? SHOW_ALTERNATIVE_RECENTS_CLEAR_ALL
                             : HIDE_ALTERNATIVE_RECENTS_CLEAR_ALL);
+      } else {
+        // use alternative clear all view/button?
+        Settings.System.putInt(mContext.getContentResolver(),
+                Settings.System.ALTERNATIVE_RECENTS_CLEAR_ALL,
+                         hasKeys || (navBarHidden && pieEnabled) ? SHOW_ALTERNATIVE_RECENTS_CLEAR_ALL
+                            : HIDE_ALTERNATIVE_RECENTS_CLEAR_ALL);
+      }
     }
 
     protected void updateHoverState() {
