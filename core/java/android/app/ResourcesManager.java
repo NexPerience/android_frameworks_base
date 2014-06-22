@@ -446,7 +446,7 @@ public class ResourcesManager {
                     r.updateStringCache();
                 }
 		if (themeChangede) {
-			r.updateStringCache2();
+			r.updateStringCache();
 
 		}                
                 //Slog.i(TAG, "Updated app resources " + v.getKey()

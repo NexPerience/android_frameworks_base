@@ -1676,6 +1676,7 @@ public class Resources {
                     keyboardHidden, mConfiguration.navigation, width, height,
                     mConfiguration.smallestScreenWidthDp,
                     mConfiguration.screenWidthDp, mConfiguration.screenHeightDp,
+                    mConfiguration.screenLayout, mConfiguration.uiMode,
 		    mConfiguration.screenLayout,
                     mConfiguration.uiThemeMode, mConfiguration.uiMode,
                     Build.VERSION.RESOURCES_SDK_INT);
@@ -1706,7 +1707,7 @@ public class Resources {
          * Quick test to find out if the config change that occurred should
          * trigger a full cache wipe.
          */
-        if (Configuration.needNewResources(configChanges, ActivityInfo.CONFIG_UI_THEME_MODE)) {
+        if (Configuration.needNewResources(configChanges, ActivityInfo.CONFIG_UI_THEME_MODE, 0)) {
             if (DEBUG_CONFIG) {
                 Log.d(TAG, "Clear drawable cache from config changes: 0x"
                         + Integer.toHexString(configChanges));
@@ -2126,7 +2127,7 @@ public class Resources {
     }
 
 	/** @hide */
-    public final void updateStringCache2() {
+    public final void updateStringCache() {
         synchronized (mTmpValue) {
             mAssets.recreateStringBlocks();
         }
