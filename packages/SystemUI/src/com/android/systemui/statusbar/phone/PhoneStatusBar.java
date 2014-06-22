@@ -191,7 +191,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     int mIconHPadding = -1;
     Display mDisplay;
     Point mCurrentDisplaySize = new Point();
-    int mCurrUiThemeMode;
     private float mHeadsUpVerticalOffset;
     private int[] mPilePosition = new int[2];
 
@@ -456,8 +455,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mNetworkController = new NetworkController(mContext);
         mBluetoothController = new BluetoothController(mContext);
         mRotationLockController = new RotationLockController(mContext);
-
-	mCurrUiThemeMode = mContext.getResources().getConfiguration().uiThemeMode;
 
         super.start(); // calls createAndAddWindows()
 
@@ -3078,14 +3075,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     void updateResources() {
         final Context context = mContext;
         final Resources res = context.getResources();
-
-	// detect theme ui mode change 
-	int uiThemeMode = res.getConfiguration().uiThemeMode;
-	if (uiThemeMode != mCurrUiThemeMode)
-	 {	
-        	mCurrUiThemeMode = uiThemeMode;	
-		return;	
-	}
 
         // detect theme change.
         CustomTheme newTheme = res.getConfiguration().customTheme;

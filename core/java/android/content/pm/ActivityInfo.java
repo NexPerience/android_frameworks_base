@@ -338,13 +338,6 @@ public class ActivityInfo extends ComponentInfo
      * {@link android.R.attr#configChanges} attribute.
      */
     public static final int CONFIG_MNC = 0x0002;
-  /**
-    * Bit in {@link #configChanges} that indicates that the activity
-    * can itself handle the inverted ui mode. Set from the
-    * {@link android.R.attr#configChanges} attribute.
-    * @hide
-    */	
-   public static final int CONFIG_UI_THEME_MODE = 0x0300;
     /**
      * Bit in {@link #configChanges} that indicates that the activity
      * can itself handle changes to the locale.  Set from the
@@ -459,7 +452,6 @@ public class ActivityInfo extends ComponentInfo
         Configuration.NATIVE_CONFIG_NAVIGATION,             // NAVIGATION
         Configuration.NATIVE_CONFIG_ORIENTATION,            // ORIENTATION
         Configuration.NATIVE_CONFIG_SCREEN_LAYOUT,          // SCREEN LAYOUT
-	Configuration.NATIVE_CONFIG_UI_THEME_MODE,          // UI THEME MODE 
         Configuration.NATIVE_CONFIG_UI_MODE,                // UI MODE
         Configuration.NATIVE_CONFIG_SCREEN_SIZE,            // SCREEN SIZE
         Configuration.NATIVE_CONFIG_SMALLEST_SCREEN_SIZE,   // SMALLEST SCREEN SIZE
