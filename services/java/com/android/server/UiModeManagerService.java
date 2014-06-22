@@ -82,6 +82,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
     private int mNightMode = UiModeManager.MODE_NIGHT_NO;
     private boolean mCarModeEnabled = false;
     private boolean mCharging = false;
+    private int mUiThemeMode;
     private int mUiThemeAutoMode;
     private final int mDefaultUiModeType;
     private final boolean mCarModeKeepsScreenOn;
@@ -92,6 +93,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
     private int mCurUiMode = 0;
     private int mSetUiMode = 0;
     private int mSetUiThemeMode = 0;
+
     private boolean mAllowConfigChange = true;
     private float mCurrentSwitchLevel = DARK_CONDITION;
 
@@ -195,17 +197,6 @@ final class UiModeManagerService extends IUiModeManager.Stub
 
 }		
 
-  Runnable mReleaseUiThemeModeBlock = new Runnable() {
-        public void run() {
-            mAllowConfigChange = true;
-            synchronized (mLock) {
-                if (mSystemReady) {
-                    sendConfigurationLocked();
-                }
-            }
-        }
-    };
-
     private final TwilightService.TwilightListener mTwilightListener =
             new TwilightService.TwilightListener() {
         @Override
@@ -221,6 +212,9 @@ final class UiModeManagerService extends IUiModeManager.Stub
 	
 	void observe() {	
 	ContentResolver resolver = mContext.getContentResolver();	
+	resolver.registerContentObserver(Settings.Secure.getUriFor(	
+		Settings.Secure.UI_THEME_MODE),	
+	 	false, this);	
 	resolver.registerContentObserver(Settings.Secure.getUriFor(	
 	Settings.Secure.UI_THEME_AUTO_MODE),	
 	       false, this);	
@@ -253,16 +247,6 @@ final class UiModeManagerService extends IUiModeManager.Stub
 
         mConfiguration.setToDefaults();
 
-        /* possible theme modes @link Configuration
-         * {@link #UI_THEME_MODE_NORMAL},
-         * {@link #UI_THEME_MODE_HOLO_DARK}, {@link #UI_THEME_MODE_HOLO_LIGHT},
-         */
-        mConfiguration.uiThemeMode = Settings.Secure.getIntForUser(
-               mContext.getContentResolver(),
-               Settings.Secure.UI_THEME_MODE, mContext.getResources().getInteger(
-               com.android.internal.R.integer.config_uiThemeMode),
-               UserHandle.USER_CURRENT);
-
 	// Register settings observer 	
        SettingsObserver settingsObserver = new SettingsObserver(new Handler());
        settingsObserver.observe();
@@ -283,7 +267,16 @@ final class UiModeManagerService extends IUiModeManager.Stub
     }
 
       private void updateUiThemeMode() {	
+		/* possible theme modes @link Configuration	
 
+         	* {@link #UI_THEME_MODE_NORMAL},	
+		* {@link #UI_THEME_MODE_HOLO_DARK}, {@link #UI_THEME_MODE_HOLO_LIGHT},	
+		*/
+		mUiThemeMode = Settings.Secure.getIntForUser(mContext.getContentResolver(),
+		Settings.Secure.UI_THEME_MODE, mContext.getResources().getInteger(
+		com.android.internal.R.integer.config_uiThemeMode),
+		UserHandle.USER_CURRENT);	
+		mConfiguration.uiThemeMode = mUiThemeMode;	
 		mUiThemeAutoMode = Settings.Secure.getIntForUser(	
 		mContext.getContentResolver(),	
 		Settings.Secure.UI_THEME_AUTO_MODE,	
@@ -303,8 +296,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
 		if (mAttached) {	
 		mAttached = false;	
 		mContext.unregisterReceiver(mBroadcastReceiver);	
-		unregisterLightSensor();
-		mHandler.removeCallbacks(mReleaseUiThemeModeBlock);	
+		unregisterLightSensor();	
 			}	
 		}	
 
@@ -313,16 +305,12 @@ final class UiModeManagerService extends IUiModeManager.Stub
 		         return;	
 		}	
 
-		if (mAllowConfigChange) {
-                mAllowConfigChange = false;
-                mHandler.postDelayed(mReleaseUiThemeModeBlock, 3000);
-                synchronized (mLock) {
-                    if (mSystemReady) {
-                        sendConfigurationLocked();
-                    }
+	synchronized (mLock) {
+		if (mSystemReady) {	
+		sendConfigurationLocked();	
+			}	
 		}	
 	}	
-}	
 
 		@Override
 		public void onSensorChanged(SensorEvent event) {	
@@ -423,30 +411,6 @@ final class UiModeManagerService extends IUiModeManager.Stub
         }
     }
 
-    @Override // Binder call
-    public void setUiThemeMode(int mode) {
-        switch (mode) {
-            case Configuration.UI_THEME_MODE_NORMAL:
-            case Configuration.UI_THEME_MODE_HOLO_DARK:
-            case Configuration.UI_THEME_MODE_HOLO_LIGHT:
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown themeMode: " + mode);
-        }
-
-        final long ident = Binder.clearCallingIdentity();
-       try {
-            mConfiguration.uiThemeMode = mode;
-            synchronized (mLock) {
-                if (mSystemReady) {
-                    sendConfigurationLocked();
-                }
-            }
-        } finally {
-            Binder.restoreCallingIdentity(ident);
-        }
-    }
-
     void systemReady() {
         synchronized (mLock) {
             mSystemReady = true;
@@ -528,19 +492,8 @@ final class UiModeManagerService extends IUiModeManager.Stub
 	if (mSetUiMode != mConfiguration.uiMode	
                        || mSetUiThemeMode != mConfiguration.uiThemeMode) {
 	mSetUiMode = mConfiguration.uiMode;
-
-	if (mSetUiThemeMode != mConfiguration.uiThemeMode) {
-                final IStatusBarService barService = IStatusBarService.Stub.asInterface(
-                        ServiceManager.getService(Context.STATUS_BAR_SERVICE));
-                try {
-                    if (barService != null) {
-                        barService.collapsePanels();
-                    }
-                } catch (RemoteException e) {
-                    Slog.w(TAG, "Failure communicating with statusbar service", e);
-                }
-
-                mSetUiThemeMode = mConfiguration.uiThemeMode;
+	mSetUiThemeMode = mConfiguration.uiThemeMode;
+        mSetUiMode = mConfiguration.uiMode;
                 Settings.Secure.putIntForUser(mContext.getContentResolver(),
                         Settings.Secure.UI_THEME_MODE, mSetUiThemeMode,
                         UserHandle.USER_CURRENT);
@@ -779,7 +732,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
                 updateComputedNightModeLocked();
                 updateLocked(0, 0);
             }
-	   if (mUiThemeAutoMode == 2) {
+	if (mUiThemeAutoMode == 1) {
 		updateTwilightThemeAutoMode();
          	sendConfigurationLocked();
                }
