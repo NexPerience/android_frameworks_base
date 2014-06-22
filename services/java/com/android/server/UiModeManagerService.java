@@ -54,7 +54,6 @@ import java.io.PrintWriter;
 
 import com.android.internal.R;
 import com.android.internal.app.DisableCarModeActivity;
-import com.android.internal.statusbar.IStatusBarService;
 import com.android.server.TwilightService.TwilightState;
 
 final class UiModeManagerService extends IUiModeManager.Stub
@@ -285,8 +284,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
 		filter.addAction(Intent.ACTION_SCREEN_OFF);	
 		filter.addAction(Intent.ACTION_SCREEN_ON);	
 		mContext.registerReceiver(mBroadcastReceiver, filter);	
-		registerLightSensor();
-		return;	
+		registerLightSensor();	
 	}	
 		} else {	
 		if (mAttached) {	
@@ -297,8 +295,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
 		}	
 
 			if (mUiThemeAutoMode == 2) {	
-			 updateTwilight();
-		         return;	
+			updateTwilightThemeAutoMode();	
 		}	
 
 	synchronized (mLock) {
@@ -582,7 +579,7 @@ final class UiModeManagerService extends IUiModeManager.Stub
 
             sendConfigurationAndStartDreamOrDockAppLocked(category);
         }
-
+}
         // keep screen on when charging and in car mode
         boolean keepScreenOn = mCharging &&
                 ((mCarModeEnabled && mCarModeKeepsScreenOn) ||
