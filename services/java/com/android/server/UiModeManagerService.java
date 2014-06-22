@@ -62,9 +62,6 @@ final class UiModeManagerService extends IUiModeManager.Stub
     private static final String TAG = UiModeManager.class.getSimpleName();
     private static final boolean LOG = false;
 
-    private static float LIGHT_CONDITION = 25f;
-    private static float DARK_CONDITION  = 0.25f;
-
     // Enable launching of applications when entering the dock.
     private static final boolean ENABLE_LAUNCH_CAR_DOCK_APP = true;
     private static final boolean ENABLE_LAUNCH_DESK_DOCK_APP = true;
@@ -95,7 +92,6 @@ final class UiModeManagerService extends IUiModeManager.Stub
     private int mSetUiThemeMode = 0;
 
     private boolean mAllowConfigChange = true;
-    private float mCurrentSwitchLevel = DARK_CONDITION;
 
     private boolean mHoldingConfiguration = false;
     private Configuration mConfiguration = new Configuration();
@@ -316,11 +312,9 @@ final class UiModeManagerService extends IUiModeManager.Stub
 		public void onSensorChanged(SensorEvent event) {	
 		int type = event.sensor.getType();	
 		if (type == Sensor.TYPE_LIGHT) {	
-		if (event.values[0] <= mCurrentSwitchLevel) {
-                mCurrentSwitchLevel = LIGHT_CONDITION;
+		if (event.values[0] <= SensorManager.LIGHT_FULLMOON) {	
 		mConfiguration.uiThemeMode = Configuration.UI_THEME_MODE_HOLO_DARK;	
-			} else {
-		mCurrentSwitchLevel = DARK_CONDITION;	
+			} else {	
 		mConfiguration.uiThemeMode = Configuration.UI_THEME_MODE_HOLO_LIGHT;	
 		}	
 		synchronized (mLock) {	
