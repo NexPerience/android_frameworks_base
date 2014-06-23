@@ -2006,6 +2006,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    private void loadHeadsUpSetting(SQLiteStatement stmt) {
+        String headsUpValues = mContext.getResources()
+                .getString(R.string.def_heads_up_notification_values);
+        if (!TextUtils.isEmpty(headsUpValues)) {
+            loadSetting(stmt, Settings.System.HEADS_UP_NOTIFICATION, "0");
+            loadSetting(stmt, Settings.System.HEADS_UP_CUSTOM_VALUES, headsUpValues);
+        }
+    }
+
     private void loadSettings(SQLiteDatabase db) {
         loadSystemSettings(db);
         loadSecureSettings(db);
@@ -2065,6 +2074,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
             loadIntegerSetting(stmt, Settings.System.DOUBLE_TAP_SLEEP_GESTURE,
                     R.integer.def_double_tap_sleep_gesture);
+
+            loadHeadsUpSetting(stmt);
 
         } finally {
             if (stmt != null) stmt.close();
